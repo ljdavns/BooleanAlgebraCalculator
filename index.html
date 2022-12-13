@@ -1,0 +1,150 @@
+<html>
+
+<head>
+  <title>example</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <el-row v-for="(originalExpr, index) in originalExprList" style="margin: 20px;">
+      <el-select :disabled="index==0" v-model="originalExpr.operator" placeholder="请选择">
+        <el-option v-for="item in logicOption" :key="item.value" :label="item.label" :value="item.value">
+        </el-option>
+      </el-select>
+      <el-input style="margin-left: 10px;width: 200px;" v-model="originalExpr.field" placeholder="字段"></el-input>
+      <el-input style="margin-left: 10px;width: 200px;" v-model="originalExpr.value" placeholder="值"></el-input>
+      <!-- add new expr -->
+      <span style="margin-left: 10px">({{originalExpr.id}})</span>
+      <el-button style="margin-left: 10px;" type="primary" icon="el-icon-plus"
+        @click="originalExprList.push({id:'expr'+(totalIndex+1), operator:'and', field:'col'+(totalIndex+1), value:'val'+(totalIndex+1)})"></el-button>
+      <el-button style="margin-left: 10px;" type="danger" icon="el-icon-delete" :disabled="index==0"
+        @click="originalExprList.splice(index, 1)"></el-button>
+    </el-row>
+    <!-- expr -->
+    <div style="margin: 20px;">
+      <span>表达式：</span>
+      {{ originalExprList.map(item=>'(').reduce((prev, curr) => prev + ' ( ') }}
+      <span v-for="(originalExpr, index) in originalExprList" :key="index" style="margin: 0;">
+        <span v-if="index > 0">
+          <span>{{originalExpr.operator.replace('-not','')}}</span>
+          <span>{{originalExpr.operator.indexOf('not') != -1 ? ' not ' : ''}}</span>
+        </span>
+        <span>{{originalExpr.id}}</span>
+        )&nbsp;
+    </div>
+    <div style="margin: 20px;">
+      <span>SQL：</span>
+      {{ originalExprList.map(item=>'(').reduce((prev, curr) => prev + ' ( ') }}
+      <span v-for="(originalExpr, index) in originalExprList" :key="index" style="margin: 0;">
+        <span v-if="index > 0">
+          <span>{{originalExpr.operator.replace('-not','')}}</span>
+          <span>{{originalExpr.operator.indexOf('not') != -1 ? ' not ' : ''}}</span>
+        </span>
+        <span>{{originalExpr.field}}</span>
+        =
+        <span>{{originalExpr.value}}</span>
+        )&nbsp;
+    </div>
+    <!-- simplified expr -->
+    <div style="margin: 20px;">
+      <span>逻辑化简：</span>
+      <span v-for="(subExprList, index) in simplifiedExprList" :key="index" style="margin: 0;">
+        <span v-if="index > 0">&nbsp;or</span>
+        <span v-for="(subExpr, index) in subExprList" :key="index" style="margin: 0;">
+          <span v-if="index > 0">&nbsp;and</span>
+          <span>{{subExpr.operator.indexOf('not') != -1 ? 'not ' : ''}}{{subExpr.id}}</span>
+        </span>
+      </span>
+    </div>
+    <!-- sql -->
+    <div style="margin: 20px;">
+      <span>化简后去除括号SQL：</span>
+      <span v-for="(subExprList, index) in simplifiedExprList" :key="index" style="margin: 0;">
+        <span v-if="index > 0">&nbsp;or</span>
+        <span v-for="(subExpr, index) in subExprList" :key="index" style="margin: 0;">
+          <span v-if="index > 0">&nbsp;and</span>
+          <span>{{subExpr.field}}</span>
+          {{subExpr.operator.indexOf('not') != -1 ? '!=' : '='}}
+          <span>{{subExpr.value}}</span>
+        </span>
+      </span>
+    </div>
+  </div>
+  <script>
+    var app = new Vue({
+      el: '#app',
+      computed: {
+        simplifiedExprList() {
+          return this.originalExprList.reduce((prev, curr) => {
+            console.log(prev)
+            console.log(curr)
+            if (prev.length == 0) {
+              prev.push([curr]);
+            } else {
+              if (curr.operator.indexOf('and') == 0) {
+                prev.map(item => item.push(curr));
+              } else if (curr.operator.indexOf('or') == 0) {
+                prev.push([curr]);
+              }
+            }
+            return prev;
+          }, []);
+        },
+        totalIndex() {
+          return parseInt(this.originalExprList[this.originalExprList.length - 1].id.replace('expr', ''))
+        }
+      },
+      data: {
+        originalExprList: [
+          {
+            id: 'expr1',
+            operator: '',
+            field: 'col1',
+            value: 'val1'
+          },
+          {
+            id: 'expr2',
+            operator: 'or',
+            field: 'col2',
+            value: 'val2'
+          },
+          {
+            id: 'expr3',
+            operator: 'and',
+            field: 'col3',
+            value: 'val3'
+          },
+          {
+            id: 'expr4',
+            operator: 'or',
+            field: 'col4',
+            value: 'val4'
+          },
+          {
+            id: 'expr5',
+            operator: 'and',
+            field: 'col5',
+            value: 'val5'
+          },
+          {
+            id: 'expr6',
+            operator: 'or-not',
+            field: 'col6',
+            value: 'val6'
+          }
+        ],
+        logicOption: [
+          { value: 'and', label: '与' },
+          { value: 'or', label: '或' },
+          { value: 'and-not', label: '非（前加与）' },
+          { value: 'or-not', label: '非（前加或）' }
+        ]
+      }
+    });
+  </script>
+</body>
+
+</html>
